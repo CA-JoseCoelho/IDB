@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise Interativa de Propostas - IDB Lisbon Redevelopment</title>
+    <title>Análise Detalhada de Propostas - IDB Redevelopment</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
     <!-- Visualization & Content Choices: 
         - Report Info: Total proposal values per company. Goal: Compare. Viz: KPI cards and a main horizontal bar chart. Interaction: Static view for immediate understanding. Justification: Provides a quick, high-level overview of the final bids. Library: HTML/Tailwind for cards, Chart.js for the main comparison chart.
         - Report Info: Costs per construction chapter. Goal: Explore & Compare. Viz: Dynamic vertical bar chart combined with a details table. Interaction: Dropdown menu to select a chapter. Justification: Enables users to perform a targeted analysis on the most significant parts of the budget, which is the core task, providing both visual and numerical data. Library: Chart.js, with dynamic updates.
-        - Report Info: Individual article prices. Goal: Organize & Detail. Viz: A chapter selector dropdown followed by a searchable HTML table. Interaction: Two-step filtering (chapter selection, then live search). Justification: Prevents information overload by focusing the user on a specific work area before showing line-item details. This is a significant usability improvement. Library: Vanilla JS for data filtering and rendering.
+        - Report Info: Individual article prices. Goal: Organize & Detail. Viz: A chapter selector dropdown followed by a searchable HTML table showing quantities, unit prices and totals. Interaction: Two-step filtering (chapter selection, then live search). Justification: Prevents information overload by focusing the user on a specific work area before showing line-item details. This is a significant usability improvement based on the comprehensive new data. Library: Vanilla JS for data filtering and rendering.
         - All visualizations include a "Market Average" to provide crucial context for whether a bid is competitive, not just cheaper than another. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -62,12 +62,19 @@
             outline: 2px solid #A58A5C;
             outline-offset: 2px;
         }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .details-cell {
+            font-size: 0.8rem;
+            color: #6B7280;
+        }
     </style>
 </head>
 <body class="antialiased">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-[#383838]">Análise Interativa de Propostas</h1>
+            <h1 class="text-4xl font-bold text-[#383838]">Análise Detalhada de Propostas</h1>
             <p class="text-lg mt-2 text-gray-600">IDB Lisbon Redevelopment</p>
         </header>
 
@@ -81,7 +88,7 @@
             <section id="geral" class="space-y-12">
                 <div class="text-center">
                     <h2 class="text-3xl font-semibold text-[#383838]">Visão Geral das Propostas (Valores Finais)</h2>
-                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Esta secção apresenta os valores totais finais, após verificação e correção de todas as propostas. Os cartões e o gráfico refletem a comparação final de custos para a tomada de decisão.</p>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Esta secção apresenta os valores totais finais, baseados no mapa comparativo detalhado. Os cartões e o gráfico refletem a comparação final de custos para a tomada de decisão.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div id="kpi-ktl" class="kpi-card text-center"></div>
@@ -143,7 +150,7 @@
                         <input type="text" id="articleSearch" placeholder="Pesquisar na lista de artigos..." class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#A58A5C]">
                     </div>
                 </div>
-                <div class="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="table-responsive bg-white rounded-lg shadow-sm border border-gray-200">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -152,7 +159,6 @@
                                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">KTL</th>
                                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Garcia</th>
                                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Ankarsa</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Média</th>
                             </tr>
                         </thead>
                         <tbody id="articlesTableBody" class="bg-white divide-y divide-gray-200">
@@ -183,13 +189,14 @@
                     { name: 'VIII. TELECOMUNICAÇÕES', id: 'VIII' },
                     { name: 'IX. INSTALAÇÕES ELÉTRICAS', id: 'IX' },
                     { name: 'X. SEGURANÇA', id: 'X' },
-                    { name: 'XI. GTC - GESTÃO TÉCNICA CENTRALIZADA', id: 'XI' },
+                    { name: 'XI. GTC', id: 'XI' },
                     { name: 'XII. AVAC', id: 'XII' },
                     { name: 'XIII. REDES DE ÁGUAS, ESGOTOS E GÁS', id: 'XIII' },
-                    { name: 'XIV. SCIE - SEGURANÇA CONTRA INCÊNDIOS', id: 'XIV' },
+                    { name: 'XIV. SCIE', id: 'XIV' },
                     { name: 'XV. ARRANJOS EXTERIORES', id: 'XV' },
                     { name: 'XVI. EQUIPAMENTOS DIVERSOS', id: 'XVI' },
-                    { name: 'XVII. REFORÇO SÍSMICO', id: 'XVII' }
+                    { name: 'XVII. REFORÇO SÍSMICO', id: 'XVII' },
+                    { name: 'XVIII. TRABALHOS COMPLEMENTARES', id: 'XVIII' }
                 ],
                 chapterValues: {
                     'I': { ankarsa: 223126.35, garcia: 254881.33, ktl: 161878.25, avg: 213295.31 },
@@ -208,28 +215,30 @@
                     'XIV': { ankarsa: 234567.89, garcia: 228765.43, ktl: 241234.56, avg: 234855.96 },
                     'XV': { ankarsa: 198765.43, garcia: 210987.65, ktl: 189876.54, avg: 199876.54 },
                     'XVI': { ankarsa: 87654.32, garcia: 91234.56, ktl: 85432.10, avg: 88107.00 },
-                    'XVII': { ankarsa: 1091390.47, garcia: 895012.83, ktl: 909460.66, avg: 965287.99 }
+                    'XVII': { ankarsa: 1091390.47, garcia: 895012.83, ktl: 909460.66, avg: 965287.99 },
+                    'XVIII': { ankarsa: 461775.88, garcia: 12457.04, ktl: 0, avg: 158077.64 }
                 },
                  articles: [
-                    { id: 'I.1', name: 'Montagem e desmontagem de estaleiro', ktl: 85000.00, garcia: 95000.00, ankarsa: 75000.00, avg: 85000.00 },
-                    { id: 'II.1.1', name: 'Demolição de estruturas de betão armado', ktl: 45.50, garcia: 52.30, ankarsa: 48.00, avg: 48.60 },
-                    { id: 'III.1.2', name: 'Betão C30/37 em fundações', ktl: 125.00, garcia: 130.00, ankarsa: 128.50, avg: 127.83 },
-                    { id: 'IV.1.1', name: 'Estrutura em aço S355', ktl: 3.20, garcia: 3.50, ankarsa: 3.45, avg: 3.38 },
-                    { id: 'V.2.1', name: 'Divisórias em gesso cartonado', ktl: 28.00, garcia: 30.50, ankarsa: 29.50, avg: 29.33 },
-                    { id: 'VI.3.1', name: 'Pavimento cerâmico', ktl: 35.00, garcia: 38.00, ankarsa: 36.50, avg: 36.50 },
-                    { id: 'VII.1.1', name: 'Portas interiores de madeira', ktl: 250.00, garcia: 275.00, ankarsa: 260.00, avg: 261.67 },
-                    { id: 'VIII.1.1', name: 'Cabo UTP Cat6', ktl: 0.95, garcia: 1.10, ankarsa: 1.05, avg: 1.03 },
-                    { id: 'IX.1.1', name: 'Quadro Elétrico Geral', ktl: 12500.00, garcia: 13200.00, ankarsa: 12800.00, avg: 12833.33 },
-                    { id: 'X.1.1', name: 'Câmara de vigilância IP', ktl: 350.00, garcia: 380.00, ankarsa: 365.00, avg: 365.00 },
-                    { id: 'XI.1.1', name: 'Controlador GTC', ktl: 4500.00, garcia: 4800.00, ankarsa: 4600.00, avg: 4633.33 },
-                    { id: 'XII.2.1', name: 'Unidade Chiller 500kW', ktl: 65000.00, garcia: 68000.00, ankarsa: 66500.00, avg: 66500.00 },
-                    { id: 'XIII.1.1', name: 'Tubo multicamada D20', ktl: 4.50, garcia: 5.00, ankarsa: 4.80, avg: 4.77 },
-                    { id: 'XIV.1.1', name: 'Detetor de fumo ótico', ktl: 55.00, garcia: 60.00, ankarsa: 58.00, avg: 57.67 },
-                    { id: 'XV.1.1', name: 'Pavê de betão para exterior', ktl: 25.00, garcia: 28.00, ankarsa: 26.50, avg: 26.50 },
-                    { id: 'XVI.1.1', name: 'Bancada de cozinha em granito', ktl: 220.00, garcia: 240.00, ankarsa: 235.00, avg: 231.67 },
-                    { id: 'XVII.21', name: 'Reforço de pilares com perfis metálicos', ktl: 285.00, garcia: 310.00, ankarsa: 295.00, avg: 296.67 },
-                    { id: 'XVII.31', name: 'Aplicação de fibra de carbono', ktl: 180.00, garcia: 195.00, ankarsa: 188.00, avg: 187.67 },
-                    { id: 'XVII.51', name: 'União de junta estrutural com varão', ktl: 74.49, garcia: 214.78, ankarsa: 194.24, avg: 161.17 }
+                    { id: 'I.1', name: 'Montagem e desmontagem de estaleiro', un: 'vg', quant: 1, ktl_u: 85000, garcia_u: 95000, ankarsa_u: 75000, ktl_t: 85000, garcia_t: 95000, ankarsa_t: 75000},
+                    { id: 'II.1.1', name: 'Demolição de estruturas de betão armado', un: 'm3', quant: 1500, ktl_u: 45.50, garcia_u: 52.30, ankarsa_u: 48.00, ktl_t: 68250, garcia_t: 78450, ankarsa_t: 72000},
+                    { id: 'III.1.2', name: 'Betão C30/37 em fundações', un: 'm3', quant: 4500, ktl_u: 125, garcia_u: 130, ankarsa_u: 128.50, ktl_t: 562500, garcia_t: 585000, ankarsa_t: 578250},
+                    { id: 'IV.1.1', name: 'Estrutura em aço S355', un: 'kg', quant: 250000, ktl_u: 3.20, garcia_u: 3.50, ankarsa_u: 3.45, ktl_t: 800000, garcia_t: 875000, ankarsa_t: 862500},
+                    { id: 'V.2.1', name: 'Divisórias em gesso cartonado', un: 'm2', quant: 8000, ktl_u: 28, garcia_u: 30.50, ankarsa_u: 29.50, ktl_t: 224000, garcia_t: 244000, ankarsa_t: 236000},
+                    { id: 'VI.3.1', name: 'Pavimento cerâmico', un: 'm2', quant: 12000, ktl_u: 35, garcia_u: 38, ankarsa_u: 36.50, ktl_t: 420000, garcia_t: 456000, ankarsa_t: 438000},
+                    { id: 'VII.1.1', name: 'Portas interiores de madeira', un: 'un', quant: 300, ktl_u: 250, garcia_u: 275, ankarsa_u: 260, ktl_t: 75000, garcia_t: 82500, ankarsa_t: 78000},
+                    { id: 'VIII.1.1', name: 'Cabo UTP Cat6', un: 'm', quant: 10000, ktl_u: 0.95, garcia_u: 1.10, ankarsa_u: 1.05, ktl_t: 9500, garcia_t: 11000, ankarsa_t: 10500},
+                    { id: 'IX.1.1', name: 'Quadro Elétrico Geral', un: 'un', quant: 1, ktl_u: 12500, garcia_u: 13200, ankarsa_u: 12800, ktl_t: 12500, garcia_t: 13200, ankarsa_t: 12800},
+                    { id: 'X.1.1', name: 'Câmara de vigilância IP', un: 'un', quant: 150, ktl_u: 350, garcia_u: 380, ankarsa_u: 365, ktl_t: 52500, garcia_t: 57000, ankarsa_t: 54750},
+                    { id: 'XI.1.1', name: 'Controlador GTC', un: 'un', quant: 5, ktl_u: 4500, garcia_u: 4800, ankarsa_u: 4600, ktl_t: 22500, garcia_t: 24000, ankarsa_t: 23000},
+                    { id: 'XII.2.1', name: 'Unidade Chiller 500kW', un: 'un', quant: 2, ktl_u: 65000, garcia_u: 68000, ankarsa_u: 66500, ktl_t: 130000, garcia_t: 136000, ankarsa_t: 133000},
+                    { id: 'XIII.1.1', name: 'Tubo multicamada D20', un: 'm', quant: 5000, ktl_u: 4.50, garcia_u: 5.00, ankarsa_u: 4.80, ktl_t: 22500, garcia_t: 25000, ankarsa_t: 24000},
+                    { id: 'XIV.1.1', name: 'Detetor de fumo ótico', un: 'un', quant: 800, ktl_u: 55, garcia_u: 60, ankarsa_u: 58, ktl_t: 44000, garcia_t: 48000, ankarsa_t: 46400},
+                    { id: 'XV.1.1', name: 'Pavê de betão para exterior', un: 'm2', quant: 2500, ktl_u: 25, garcia_u: 28, ankarsa_u: 26.50, ktl_t: 62500, garcia_t: 70000, ankarsa_t: 66250},
+                    { id: 'XVI.1.1', name: 'Bancada de cozinha em granito', un: 'm', quant: 120, ktl_u: 220, garcia_u: 240, ankarsa_u: 235, ktl_t: 26400, garcia_t: 28800, ankarsa_t: 28200},
+                    { id: 'XVII.21', name: 'Reforço de pilares com perfis metálicos', un: 'un', quant: 180, ktl_u: 285, garcia_u: 310, ankarsa_u: 295, ktl_t: 51300, garcia_t: 55800, ankarsa_t: 53100},
+                    { id: 'XVII.31', name: 'Aplicação de fibra de carbono', un: 'm2', quant: 500, ktl_u: 180, garcia_u: 195, ankarsa_u: 188, ktl_t: 90000, garcia_t: 97500, ankarsa_t: 94000},
+                    { id: 'XVIII.1', name: 'Trabalhos preparatórios a executar no C1', un: 'm3', quant: 0.002, ktl_u: 0, garcia_u: 1557.13, ankarsa_u: 0, ktl_t: 0, garcia_t: 3.11, ankarsa_t: 0},
+                    { id: 'XVIII.2', name: 'Demolição teto técnico perfurado', un: 'm2', quant: 1, ktl_u: 22.92, garcia_u: 37.57, ankarsa_u: 47.33, ktl_t: 22.92, garcia_t: 37.57, ankarsa_t: 47.33}
                 ]
             };
 
@@ -305,8 +314,9 @@
                 tableBody.innerHTML = ''; 
 
                 const formatDifference = (value, avg) => {
-                    const diff = value - avg;
+                    if(avg === 0 && value === 0) return `<span class="text-gray-500">Na média</span>`;
                     if(avg === 0) return '<span>--</span>';
+                    const diff = value - avg;
                     const percentage = (diff / avg) * 100;
                     const sign = diff > 0 ? '+' : '';
                     const color = diff > 0 ? 'text-red-600' : 'text-green-600';
@@ -409,13 +419,13 @@
                 );
 
                 if(filteredArticles.length === 0) {
-                    articlesTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">Nenhum artigo encontrado para este capítulo${filter ? ' com o filtro aplicado' : ''}.</td></tr>`;
+                    articlesTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500">Nenhum artigo encontrado para este capítulo${filter ? ' com o filtro aplicado' : ''}.</td></tr>`;
                     return;
                 }
 
                 filteredArticles.forEach(article => {
                     const row = document.createElement('tr');
-                    const prices = [article.ktl, article.garcia, article.ankarsa];
+                    const prices = [article.ktl_t, article.garcia_t, article.ankarsa_t];
                     const minPrice = Math.min(...prices.filter(p => p > 0)); 
                     
                     const highlightClass = (price) => {
@@ -423,13 +433,19 @@
                        return '';
                     };
 
+                    const renderCell = (total, unit, quant, un) => {
+                        return `<div class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(total)}">
+                                    <div class="font-semibold">${formatCurrency(total)}</div>
+                                    <div class="details-cell">${quant} ${un} x ${formatCurrency(unit)}</div>
+                                </div>`;
+                    };
+
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${article.id}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${article.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.ktl)}">${formatCurrency(article.ktl)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.garcia)}">${formatCurrency(article.garcia)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.ankarsa)}">${formatCurrency(article.ankarsa)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${formatCurrency(article.avg)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${article.name}</td>
+                        ${renderCell(article.ktl_t, article.ktl_u, article.quant, article.un)}
+                        ${renderCell(article.garcia_t, article.garcia_u, article.quant, article.un)}
+                        ${renderCell(article.ankarsa_t, article.ankarsa_u, article.quant, article.un)}
                     `;
                     articlesTableBody.appendChild(row);
                 });
