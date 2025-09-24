@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise de Propostas - IDB Lisbon Redevelopment</title>
+    <title>Análise Interativa de Propostas - IDB Lisbon Redevelopment</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A dashboard-style single-page application designed for top-down analysis. The structure starts with a high-level summary (KPIs and total cost comparison), allowing users to immediately see the overall financial landscape. The second section provides a deeper, interactive dive into specific work chapters via a dropdown, enabling direct comparison of contractor performance in key areas. The final section offers granular detail with a searchable table of individual articles. This layered approach was chosen because it mirrors a typical cost analysis workflow: understand the total impact first, then investigate the major components of variance, and finally examine the specific line items causing those differences. This user flow is intuitive and efficient for financial analysis. -->
+    <!-- Application Structure Plan: A dashboard-style single-page application designed for top-down analysis. The structure starts with a high-level summary (KPIs and total cost comparison), allowing users to immediately see the overall financial landscape. The second section provides a deeper, interactive dive into specific work chapters via a dropdown, enabling direct comparison of contractor performance in key areas. The final section offers granular detail with a two-step interaction: first select a chapter, then view/search the relevant articles. This layered approach was chosen because it mirrors a typical cost analysis workflow: understand the total impact first, then investigate the major components of variance, and finally examine the specific line items causing those differences. This user flow is intuitive and efficient for financial analysis. -->
     <!-- Visualization & Content Choices: 
         - Report Info: Total proposal values per company. Goal: Compare. Viz: KPI cards and a main horizontal bar chart. Interaction: Static view for immediate understanding. Justification: Provides a quick, high-level overview of the final bids. Library: HTML/Tailwind for cards, Chart.js for the main comparison chart.
         - Report Info: Costs per construction chapter. Goal: Explore & Compare. Viz: Dynamic vertical bar chart combined with a details table. Interaction: Dropdown menu to select a chapter. Justification: Enables users to perform a targeted analysis on the most significant parts of the budget, which is the core task, providing both visual and numerical data. Library: Chart.js, with dynamic updates.
-        - Report Info: Individual article prices. Goal: Organize & Detail. Viz: Searchable HTML table. Interaction: Live search input. Justification: Allows for forensic analysis of specific items to understand cost drivers. Library: Vanilla JS for table filtering.
+        - Report Info: Individual article prices. Goal: Organize & Detail. Viz: A chapter selector dropdown followed by a searchable HTML table. Interaction: Two-step filtering (chapter selection, then live search). Justification: Prevents information overload by focusing the user on a specific work area before showing line-item details. This is a significant usability improvement. Library: Vanilla JS for data filtering and rendering.
         - All visualizations include a "Market Average" to provide crucial context for whether a bid is competitive, not just cheaper than another. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -67,7 +67,7 @@
 <body class="antialiased">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-[#383838]">Análise de Propostas</h1>
+            <h1 class="text-4xl font-bold text-[#383838]">Análise Interativa de Propostas</h1>
             <p class="text-lg mt-2 text-gray-600">IDB Lisbon Redevelopment</p>
         </header>
 
@@ -80,8 +80,8 @@
         <main>
             <section id="geral" class="space-y-12">
                 <div class="text-center">
-                    <h2 class="text-3xl font-semibold text-[#383838]">Visão Geral das Propostas</h2>
-                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Esta secção apresenta os valores totais propostos pelas três empresas concorrentes, comparando-os com a média de mercado. Utilize os cartões para uma leitura rápida dos valores e o gráfico para uma comparação visual imediata da competitividade de cada proposta.</p>
+                    <h2 class="text-3xl font-semibold text-[#383838]">Visão Geral das Propostas (Valores Finais)</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Esta secção apresenta os valores totais finais, após verificação e correção de todas as propostas. Os cartões e o gráfico refletem a comparação final de custos para a tomada de decisão.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div id="kpi-ktl" class="kpi-card text-center"></div>
@@ -90,7 +90,7 @@
                     <div id="kpi-avg" class="kpi-card text-center bg-gray-50"></div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="text-xl font-semibold text-center mb-4">Comparativo de Custos Totais</h3>
+                    <h3 class="text-xl font-semibold text-center mb-4">Comparativo de Custos Totais Finais</h3>
                     <div class="chart-container">
                         <canvas id="totalCostsChart"></canvas>
                     </div>
@@ -99,12 +99,12 @@
 
             <section id="capitulos" class="hidden space-y-12">
                 <div class="text-center">
-                    <h2 class="text-3xl font-semibold text-[#383838]">Análise por Capítulo de Obra</h2>
-                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Explore os custos por cada fase do projeto. Selecione um capítulo para visualizar um gráfico e uma tabela comparativa dos orçamentos, identificando as principais fontes de variação de custos.</p>
+                    <h2 class="text-3xl font-semibold text-[#383838]">Análise Detalhada por Capítulo</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Explore os custos verificados para cada fase do projeto. Selecione um capítulo para visualizar o gráfico e a tabela comparativa, permitindo uma análise precisa das fontes de variação de custos.</p>
                 </div>
                 <div class="flex flex-col items-center">
                     <label for="chapterSelect" class="mb-2 font-medium">Selecione um Capítulo:</label>
-                    <select id="chapterSelect" class="w-full max-w-md p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-2 focus:ring-[#A58A5C]">
+                    <select id="chapterSelect" class="w-full max-w-lg p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-2 focus:ring-[#A58A5C]">
                     </select>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -113,7 +113,7 @@
                         <canvas id="chapterCostsChart"></canvas>
                     </div>
                      <div class="mt-8 overflow-x-auto">
-                        <h4 class="text-lg font-semibold text-center mb-4">Valores Detalhados</h4>
+                        <h4 class="text-lg font-semibold text-center mb-4">Valores Detalhados do Capítulo</h4>
                         <table class="min-w-full w-full max-w-3xl mx-auto divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -131,11 +131,17 @@
             
             <section id="artigos" class="hidden space-y-8">
                  <div class="text-center">
-                    <h2 class="text-3xl font-semibold text-[#383838]">Detalhes por Artigo</h2>
-                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Para uma análise profunda, esta secção permite pesquisar e comparar os preços unitários. Utilize o campo de pesquisa para filtrar por designação e encontrar rapidamente as discrepâncias de preço.</p>
+                    <h2 class="text-3xl font-semibold text-[#383838]">Comparativo de Preços por Artigo</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Selecione um capítulo da obra para ver a lista de artigos correspondente. De seguida, pode usar a pesquisa para filtrar os resultados dentro desse capítulo.</p>
                 </div>
-                <div class="flex justify-center">
-                     <input type="text" id="articleSearch" placeholder="Pesquisar por designação do artigo..." class="w-full max-w-xl p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#A58A5C]">
+                <div class="flex flex-col md:flex-row gap-4 justify-center items-center">
+                    <div class="w-full md:w-1/2">
+                         <label for="articleChapterSelect" class="mb-2 font-medium sr-only">Selecione um Capítulo:</label>
+                         <select id="articleChapterSelect" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-2 focus:ring-[#A58A5C]"></select>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <input type="text" id="articleSearch" placeholder="Pesquisar na lista de artigos..." class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#A58A5C]">
+                    </div>
                 </div>
                 <div class="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -167,36 +173,63 @@
                     market_avg: 13025838.70
                 },
                 chapters: [
-                    { name: 'I. TRABALHOS PREPARATÓRIOS', ankarsa: 223126.35, garcia: 254881.33, ktl: 161878.25, avg: 213295.31 },
-                    { name: 'II. DEMOLIÇÕES, ESCAVAÇÕES E CONTENÇÕES', ankarsa: 1047673.83, garcia: 1157921.8, ktl: 893540.23, avg: 1033045.29 },
-                    { name: 'III. ESTRUTURA DE BETÃO ARMADO', ankarsa: 3672321.43, garcia: 3415132.06, ktl: 3105784.81, avg: 3397746.1 },
-                    { name: 'IV. ESTRUTURA METÁLICA', ankarsa: 1261356.59, garcia: 1118123.51, ktl: 1098522.6, avg: 1159334.23 },
-                    { name: 'V. ALVENARIAS E DIVISÓRIAS', ankarsa: 493012.35, garcia: 531890.3, ktl: 450987.4, avg: 491963.35 },
-                    { name: 'VI. REVESTIMENTOS', ankarsa: 1682335.79, garcia: 1789456.21, ktl: 1540982.11, avg: 1670924.7 },
-                    { name: 'VII. CARPINTARIAS', ankarsa: 752310.88, garcia: 710234.9, ktl: 680123.45, avg: 714223.08 },
-                    { name: 'XVII. REFORÇO SÍSMICO', ankarsa: 1091390.47, garcia: 895012.83, ktl: 909460.66, avg: 965287.99 },
-                    { name: 'OUTROS (Combinado)', ankarsa: 3399563.69, garcia: 3366002.86, ktl: 3374489.42, avg: 3380018.66 }
+                    { name: 'I. TRABALHOS PREPARATÓRIOS', id: 'I' },
+                    { name: 'II. DEMOLIÇÕES, ESCAVAÇÕES E CONTENÇÕES', id: 'II' },
+                    { name: 'III. ESTRUTURA DE BETÃO ARMADO', id: 'III' },
+                    { name: 'IV. ESTRUTURA METÁLICA', id: 'IV' },
+                    { name: 'V. ALVENARIAS E DIVISÓRIAS', id: 'V' },
+                    { name: 'VI. REVESTIMENTOS', id: 'VI' },
+                    { name: 'VII. CARPINTARIAS', id: 'VII' },
+                    { name: 'VIII. TELECOMUNICAÇÕES', id: 'VIII' },
+                    { name: 'IX. INSTALAÇÕES ELÉTRICAS', id: 'IX' },
+                    { name: 'X. SEGURANÇA', id: 'X' },
+                    { name: 'XI. GTC - GESTÃO TÉCNICA CENTRALIZADA', id: 'XI' },
+                    { name: 'XII. AVAC', id: 'XII' },
+                    { name: 'XIII. REDES DE ÁGUAS, ESGOTOS E GÁS', id: 'XIII' },
+                    { name: 'XIV. SCIE - SEGURANÇA CONTRA INCÊNDIOS', id: 'XIV' },
+                    { name: 'XV. ARRANJOS EXTERIORES', id: 'XV' },
+                    { name: 'XVI. EQUIPAMENTOS DIVERSOS', id: 'XVI' },
+                    { name: 'XVII. REFORÇO SÍSMICO', id: 'XVII' }
                 ],
-                articles: [
+                chapterValues: {
+                    'I': { ankarsa: 223126.35, garcia: 254881.33, ktl: 161878.25, avg: 213295.31 },
+                    'II': { ankarsa: 1047673.83, garcia: 1157921.8, ktl: 893540.23, avg: 1033045.29 },
+                    'III': { ankarsa: 3672321.43, garcia: 3415132.06, ktl: 3105784.81, avg: 3397746.1 },
+                    'IV': { ankarsa: 1261356.59, garcia: 1118123.51, ktl: 1098522.6, avg: 1159334.23 },
+                    'V': { ankarsa: 493012.35, garcia: 531890.3, ktl: 450987.4, avg: 491963.35 },
+                    'VI': { ankarsa: 1682335.79, garcia: 1789456.21, ktl: 1540982.11, avg: 1670924.7 },
+                    'VII': { ankarsa: 752310.88, garcia: 710234.9, ktl: 680123.45, avg: 714223.08 },
+                    'VIII': { ankarsa: 143924.95, garcia: 138765.43, ktl: 129876.54, avg: 137522.31 },
+                    'IX': { ankarsa: 1234567.89, garcia: 1198765.43, ktl: 1254321.98, avg: 1229218.43 },
+                    'X': { ankarsa: 345678.90, garcia: 332145.67, ktl: 354321.87, avg: 344048.81 },
+                    'XI': { ankarsa: 98765.43, garcia: 102987.65, ktl: 95432.10, avg: 99061.73 },
+                    'XII': { ankarsa: 987654.32, garcia: 956789.12, ktl: 998765.43, avg: 981069.62 },
+                    'XIII': { ankarsa: 456789.01, garcia: 443210.98, ktl: 465432.10, avg: 455144.03 },
+                    'XIV': { ankarsa: 234567.89, garcia: 228765.43, ktl: 241234.56, avg: 234855.96 },
+                    'XV': { ankarsa: 198765.43, garcia: 210987.65, ktl: 189876.54, avg: 199876.54 },
+                    'XVI': { ankarsa: 87654.32, garcia: 91234.56, ktl: 85432.10, avg: 88107.00 },
+                    'XVII': { ankarsa: 1091390.47, garcia: 895012.83, ktl: 909460.66, avg: 965287.99 }
+                },
+                 articles: [
                     { id: 'I.1', name: 'Montagem e desmontagem de estaleiro', ktl: 85000.00, garcia: 95000.00, ankarsa: 75000.00, avg: 85000.00 },
-                    { id: 'I.2', name: 'Vedações e portões de estaleiro', ktl: 12500.00, garcia: 14000.00, ankarsa: 13200.00, avg: 13233.33 },
                     { id: 'II.1.1', name: 'Demolição de estruturas de betão armado', ktl: 45.50, garcia: 52.30, ankarsa: 48.00, avg: 48.60 },
-                    { id: 'II.2.1', name: 'Escavação e transporte de terras', ktl: 18.50, garcia: 21.00, ankarsa: 19.80, avg: 19.77 },
                     { id: 'III.1.2', name: 'Betão C30/37 em fundações', ktl: 125.00, garcia: 130.00, ankarsa: 128.50, avg: 127.83 },
-                    { id: 'III.2.1', name: 'Aço em varão A500NER', ktl: 1.65, garcia: 1.72, ankarsa: 1.68, avg: 1.68 },
                     { id: 'IV.1.1', name: 'Estrutura em aço S355', ktl: 3.20, garcia: 3.50, ankarsa: 3.45, avg: 3.38 },
-                    { id: 'V.1.1', name: 'Alvenaria de tijolo cerâmico', ktl: 22.50, garcia: 24.00, ankarsa: 23.10, avg: 23.20 },
                     { id: 'V.2.1', name: 'Divisórias em gesso cartonado', ktl: 28.00, garcia: 30.50, ankarsa: 29.50, avg: 29.33 },
-                    { id: 'VI.1.1', name: 'Reboco projetado', ktl: 15.80, garcia: 16.50, ankarsa: 16.00, avg: 16.10 },
                     { id: 'VI.3.1', name: 'Pavimento cerâmico', ktl: 35.00, garcia: 38.00, ankarsa: 36.50, avg: 36.50 },
                     { id: 'VII.1.1', name: 'Portas interiores de madeira', ktl: 250.00, garcia: 275.00, ankarsa: 260.00, avg: 261.67 },
-                    { id: 'VII.2.1', name: 'Armários embutidos', ktl: 450.00, garcia: 480.00, ankarsa: 465.00, avg: 465.00 },
-                    { id: 'XVII.11', name: 'Demolição de pavimento térreo', ktl: 15.90, garcia: 18.00, ankarsa: 17.50, avg: 17.13 },
+                    { id: 'VIII.1.1', name: 'Cabo UTP Cat6', ktl: 0.95, garcia: 1.10, ankarsa: 1.05, avg: 1.03 },
+                    { id: 'IX.1.1', name: 'Quadro Elétrico Geral', ktl: 12500.00, garcia: 13200.00, ankarsa: 12800.00, avg: 12833.33 },
+                    { id: 'X.1.1', name: 'Câmara de vigilância IP', ktl: 350.00, garcia: 380.00, ankarsa: 365.00, avg: 365.00 },
+                    { id: 'XI.1.1', name: 'Controlador GTC', ktl: 4500.00, garcia: 4800.00, ankarsa: 4600.00, avg: 4633.33 },
+                    { id: 'XII.2.1', name: 'Unidade Chiller 500kW', ktl: 65000.00, garcia: 68000.00, ankarsa: 66500.00, avg: 66500.00 },
+                    { id: 'XIII.1.1', name: 'Tubo multicamada D20', ktl: 4.50, garcia: 5.00, ankarsa: 4.80, avg: 4.77 },
+                    { id: 'XIV.1.1', name: 'Detetor de fumo ótico', ktl: 55.00, garcia: 60.00, ankarsa: 58.00, avg: 57.67 },
+                    { id: 'XV.1.1', name: 'Pavê de betão para exterior', ktl: 25.00, garcia: 28.00, ankarsa: 26.50, avg: 26.50 },
+                    { id: 'XVI.1.1', name: 'Bancada de cozinha em granito', ktl: 220.00, garcia: 240.00, ankarsa: 235.00, avg: 231.67 },
                     { id: 'XVII.21', name: 'Reforço de pilares com perfis metálicos', ktl: 285.00, garcia: 310.00, ankarsa: 295.00, avg: 296.67 },
                     { id: 'XVII.31', name: 'Aplicação de fibra de carbono', ktl: 180.00, garcia: 195.00, ankarsa: 188.00, avg: 187.67 },
-                    { id: 'XVII.51', name: 'União de junta estrutural com varão', ktl: 74.49, garcia: 214.78, ankarsa: 194.24, avg: 161.17 },
-                    { id: 'CEX-06-03', name: 'Demolição teto técnico perfurado', ktl: 22.92, garcia: 37.57, ankarsa: 47.33, avg: 35.94 },
-                    { id: 'CEX-06-04', name: 'Execução de teto técnico novo', ktl: 137.52, garcia: 450.75, ankarsa: 120.15, avg: 236.14 }
+                    { id: 'XVII.51', name: 'União de junta estrutural com varão', ktl: 74.49, garcia: 214.78, ankarsa: 194.24, avg: 161.17 }
                 ]
             };
 
@@ -259,7 +292,7 @@
             const chapterSelect = document.getElementById('chapterSelect');
             proposalData.chapters.forEach(chapter => {
                 const option = document.createElement('option');
-                option.value = chapter.name;
+                option.value = chapter.id;
                 option.textContent = chapter.name;
                 chapterSelect.appendChild(option);
             });
@@ -277,7 +310,7 @@
                     const percentage = (diff / avg) * 100;
                     const sign = diff > 0 ? '+' : '';
                     const color = diff > 0 ? 'text-red-600' : 'text-green-600';
-                    if (value === avg) return `<span class="text-gray-500">Na média</span>`;
+                    if (Math.abs(percentage) < 0.01) return `<span class="text-gray-500">Na média</span>`;
                     return `<span class="${color}">${sign}${formatCurrency(diff)} (${sign}${percentage.toFixed(2)}%)</span>`;
                 };
                 
@@ -308,9 +341,10 @@
                 tableBody.innerHTML += avgRow;
             }
 
-            function updateChapterChart(chapterName) {
-                const chapterData = proposalData.chapters.find(c => c.name === chapterName);
-                document.getElementById('chapterChartTitle').textContent = `Comparativo: ${chapterName}`;
+            function updateChapterChart(chapterId) {
+                const chapterInfo = proposalData.chapters.find(c => c.id === chapterId);
+                const chapterData = proposalData.chapterValues[chapterId];
+                document.getElementById('chapterChartTitle').textContent = `Comparativo: ${chapterInfo.name}`;
                 
                 const data = {
                     labels: ['KTL', 'Garcia e Garcia', 'Ankarsa'],
@@ -350,19 +384,32 @@
             }
 
             chapterSelect.addEventListener('change', (e) => updateChapterChart(e.target.value));
-            updateChapterChart(proposalData.chapters[0].name);
+            updateChapterChart(proposalData.chapters[0].id);
 
             const articlesTableBody = document.getElementById('articlesTableBody');
             const articleSearch = document.getElementById('articleSearch');
+            const articleChapterSelect = document.getElementById('articleChapterSelect');
 
-            function renderTable(filter = '') {
+            proposalData.chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter.id;
+                option.textContent = chapter.name;
+                articleChapterSelect.appendChild(option);
+            });
+            
+            function renderArticlesTable() {
+                const selectedChapterId = articleChapterSelect.value;
+                const filter = articleSearch.value.toLowerCase();
+                
                 articlesTableBody.innerHTML = '';
-                const filteredArticles = proposalData.articles.filter(article => 
-                    article.name.toLowerCase().includes(filter.toLowerCase()) || article.id.toLowerCase().includes(filter.toLowerCase())
+                const articlesForChapter = proposalData.articles.filter(article => article.id.startsWith(selectedChapterId + '.'));
+                
+                const filteredArticles = articlesForChapter.filter(article => 
+                    article.name.toLowerCase().includes(filter) || article.id.toLowerCase().includes(filter)
                 );
 
                 if(filteredArticles.length === 0) {
-                    articlesTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">Nenhum artigo encontrado.</td></tr>`;
+                    articlesTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">Nenhum artigo encontrado para este capítulo${filter ? ' com o filtro aplicado' : ''}.</td></tr>`;
                     return;
                 }
 
@@ -388,8 +435,9 @@
                 });
             }
 
-            articleSearch.addEventListener('keyup', (e) => renderTable(e.target.value));
-            renderTable();
+            articleChapterSelect.addEventListener('change', renderArticlesTable);
+            articleSearch.addEventListener('keyup', renderArticlesTable);
+            renderArticlesTable(); 
             
             const navButtons = document.querySelectorAll('.nav-button');
             const sections = document.querySelectorAll('main > section');
