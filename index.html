@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Propostas - IDB Lisbon Redevelopment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style single-page application designed for top-down analysis. The structure starts with a high-level summary (KPIs and total cost comparison), allowing users to immediately see the overall financial landscape. The second section provides a deeper, interactive dive into specific work chapters via a dropdown, enabling direct comparison of contractor performance in key areas. The final section offers granular detail with a searchable table of individual articles. This layered approach was chosen because it mirrors a typical cost analysis workflow: understand the total impact first, then investigate the major components of variance, and finally examine the specific line items causing those differences. This user flow is intuitive and efficient for financial analysis. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Total proposal values per company. Goal: Compare. Viz: KPI cards and a main horizontal bar chart. Interaction: Static view for immediate understanding. Justification: Provides a quick, high-level overview of the final bids. Library: HTML/Tailwind for cards, Chart.js for the main comparison chart.
+        - Report Info: Costs per construction chapter. Goal: Explore & Compare. Viz: Dynamic vertical bar chart combined with a details table. Interaction: Dropdown menu to select a chapter. Justification: Enables users to perform a targeted analysis on the most significant parts of the budget, which is the core task, providing both visual and numerical data. Library: Chart.js, with dynamic updates.
+        - Report Info: Individual article prices. Goal: Organize & Detail. Viz: Searchable HTML table. Interaction: Live search input. Justification: Allows for forensic analysis of specific items to understand cost drivers. Library: Vanilla JS for table filtering.
+        - All visualizations include a "Market Average" to provide crucial context for whether a bid is competitive, not just cheaper than another. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .kpi-card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAEAEA;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-button.active {
+            border-bottom-color: #A58A5C;
+            color: #A58A5C;
+            font-weight: 600;
+        }
+        input:focus, select:focus {
+            outline: 2px solid #A58A5C;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-[#383838]">Análise de Propostas</h1>
+            <p class="text-lg mt-2 text-gray-600">IDB Lisbon Redevelopment</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-10">
+            <button data-target="geral" class="nav-button py-4 px-6 text-lg text-gray-600 active">Resumo Geral</button>
+            <button data-target="capitulos" class="nav-button py-4 px-6 text-lg text-gray-600">Análise por Capítulo</button>
+            <button data-target="artigos" class="nav-button py-4 px-6 text-lg text-gray-600">Detalhes por Artigo</button>
+        </nav>
+
+        <main>
+            <section id="geral" class="space-y-12">
+                <div class="text-center">
+                    <h2 class="text-3xl font-semibold text-[#383838]">Visão Geral das Propostas</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Esta secção apresenta os valores totais propostos pelas três empresas concorrentes, comparando-os com a média de mercado. Utilize os cartões para uma leitura rápida dos valores e o gráfico para uma comparação visual imediata da competitividade de cada proposta.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div id="kpi-ktl" class="kpi-card text-center"></div>
+                    <div id="kpi-garcia" class="kpi-card text-center"></div>
+                    <div id="kpi-ankarsa" class="kpi-card text-center"></div>
+                    <div id="kpi-avg" class="kpi-card text-center bg-gray-50"></div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-xl font-semibold text-center mb-4">Comparativo de Custos Totais</h3>
+                    <div class="chart-container">
+                        <canvas id="totalCostsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="capitulos" class="hidden space-y-12">
+                <div class="text-center">
+                    <h2 class="text-3xl font-semibold text-[#383838]">Análise por Capítulo de Obra</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Explore os custos por cada fase do projeto. Selecione um capítulo para visualizar um gráfico e uma tabela comparativa dos orçamentos, identificando as principais fontes de variação de custos.</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <label for="chapterSelect" class="mb-2 font-medium">Selecione um Capítulo:</label>
+                    <select id="chapterSelect" class="w-full max-w-md p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-2 focus:ring-[#A58A5C]">
+                    </select>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 id="chapterChartTitle" class="text-xl font-semibold text-center mb-4"></h3>
+                    <div class="chart-container mb-8" style="max-height: 450px;">
+                        <canvas id="chapterCostsChart"></canvas>
+                    </div>
+                     <div class="mt-8 overflow-x-auto">
+                        <h4 class="text-lg font-semibold text-center mb-4">Valores Detalhados</h4>
+                        <table class="min-w-full w-full max-w-3xl mx-auto divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empresa / Métrica</th>
+                                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Valor</th>
+                                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Diferença vs Média</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chapterValuesTable" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="artigos" class="hidden space-y-8">
+                 <div class="text-center">
+                    <h2 class="text-3xl font-semibold text-[#383838]">Detalhes por Artigo</h2>
+                    <p class="mt-2 text-gray-500 max-w-3xl mx-auto">Para uma análise profunda, esta secção permite pesquisar e comparar os preços unitários. Utilize o campo de pesquisa para filtrar por designação e encontrar rapidamente as discrepâncias de preço.</p>
+                </div>
+                <div class="flex justify-center">
+                     <input type="text" id="articleSearch" placeholder="Pesquisar por designação do artigo..." class="w-full max-w-xl p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#A58A5C]">
+                </div>
+                <div class="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Artigo</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Designação</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">KTL</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Garcia</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Ankarsa</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Média</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articlesTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const proposalData = {
+                totals: {
+                    ankarsa: 13623091.38,
+                    garcia: 13238655.80,
+                    ktl: 12215768.93,
+                    market_avg: 13025838.70
+                },
+                chapters: [
+                    { name: 'I. TRABALHOS PREPARATÓRIOS', ankarsa: 223126.35, garcia: 254881.33, ktl: 161878.25, avg: 213295.31 },
+                    { name: 'II. DEMOLIÇÕES, ESCAVAÇÕES E CONTENÇÕES', ankarsa: 1047673.83, garcia: 1157921.8, ktl: 893540.23, avg: 1033045.29 },
+                    { name: 'III. ESTRUTURA DE BETÃO ARMADO', ankarsa: 3672321.43, garcia: 3415132.06, ktl: 3105784.81, avg: 3397746.1 },
+                    { name: 'IV. ESTRUTURA METÁLICA', ankarsa: 1261356.59, garcia: 1118123.51, ktl: 1098522.6, avg: 1159334.23 },
+                    { name: 'V. ALVENARIAS E DIVISÓRIAS', ankarsa: 493012.35, garcia: 531890.3, ktl: 450987.4, avg: 491963.35 },
+                    { name: 'VI. REVESTIMENTOS', ankarsa: 1682335.79, garcia: 1789456.21, ktl: 1540982.11, avg: 1670924.7 },
+                    { name: 'VII. CARPINTARIAS', ankarsa: 752310.88, garcia: 710234.9, ktl: 680123.45, avg: 714223.08 },
+                    { name: 'XVII. REFORÇO SÍSMICO', ankarsa: 1091390.47, garcia: 895012.83, ktl: 909460.66, avg: 965287.99 },
+                    { name: 'OUTROS (Combinado)', ankarsa: 3399563.69, garcia: 3366002.86, ktl: 3374489.42, avg: 3380018.66 }
+                ],
+                articles: [
+                    { id: 'I.1', name: 'Montagem e desmontagem de estaleiro', ktl: 85000.00, garcia: 95000.00, ankarsa: 75000.00, avg: 85000.00 },
+                    { id: 'I.2', name: 'Vedações e portões de estaleiro', ktl: 12500.00, garcia: 14000.00, ankarsa: 13200.00, avg: 13233.33 },
+                    { id: 'II.1.1', name: 'Demolição de estruturas de betão armado', ktl: 45.50, garcia: 52.30, ankarsa: 48.00, avg: 48.60 },
+                    { id: 'II.2.1', name: 'Escavação e transporte de terras', ktl: 18.50, garcia: 21.00, ankarsa: 19.80, avg: 19.77 },
+                    { id: 'III.1.2', name: 'Betão C30/37 em fundações', ktl: 125.00, garcia: 130.00, ankarsa: 128.50, avg: 127.83 },
+                    { id: 'III.2.1', name: 'Aço em varão A500NER', ktl: 1.65, garcia: 1.72, ankarsa: 1.68, avg: 1.68 },
+                    { id: 'IV.1.1', name: 'Estrutura em aço S355', ktl: 3.20, garcia: 3.50, ankarsa: 3.45, avg: 3.38 },
+                    { id: 'V.1.1', name: 'Alvenaria de tijolo cerâmico', ktl: 22.50, garcia: 24.00, ankarsa: 23.10, avg: 23.20 },
+                    { id: 'V.2.1', name: 'Divisórias em gesso cartonado', ktl: 28.00, garcia: 30.50, ankarsa: 29.50, avg: 29.33 },
+                    { id: 'VI.1.1', name: 'Reboco projetado', ktl: 15.80, garcia: 16.50, ankarsa: 16.00, avg: 16.10 },
+                    { id: 'VI.3.1', name: 'Pavimento cerâmico', ktl: 35.00, garcia: 38.00, ankarsa: 36.50, avg: 36.50 },
+                    { id: 'VII.1.1', name: 'Portas interiores de madeira', ktl: 250.00, garcia: 275.00, ankarsa: 260.00, avg: 261.67 },
+                    { id: 'VII.2.1', name: 'Armários embutidos', ktl: 450.00, garcia: 480.00, ankarsa: 465.00, avg: 465.00 },
+                    { id: 'XVII.11', name: 'Demolição de pavimento térreo', ktl: 15.90, garcia: 18.00, ankarsa: 17.50, avg: 17.13 },
+                    { id: 'XVII.21', name: 'Reforço de pilares com perfis metálicos', ktl: 285.00, garcia: 310.00, ankarsa: 295.00, avg: 296.67 },
+                    { id: 'XVII.31', name: 'Aplicação de fibra de carbono', ktl: 180.00, garcia: 195.00, ankarsa: 188.00, avg: 187.67 },
+                    { id: 'XVII.51', name: 'União de junta estrutural com varão', ktl: 74.49, garcia: 214.78, ankarsa: 194.24, avg: 161.17 },
+                    { id: 'CEX-06-03', name: 'Demolição teto técnico perfurado', ktl: 22.92, garcia: 37.57, ankarsa: 47.33, avg: 35.94 },
+                    { id: 'CEX-06-04', name: 'Execução de teto técnico novo', ktl: 137.52, garcia: 450.75, ankarsa: 120.15, avg: 236.14 }
+                ]
+            };
+
+            const formatCurrency = (value) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
+
+            function createKPI(id, title, value, isLowest = false) {
+                const container = document.getElementById(id);
+                let borderColor = isLowest ? 'border-green-400' : 'border-transparent';
+                container.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-700">${title}</h3>
+                    <p class="text-3xl font-bold text-[#383838] mt-2">${formatCurrency(value)}</p>
+                    ${isLowest ? '<span class="mt-2 inline-block text-sm font-semibold bg-green-100 text-green-800 px-3 py-1 rounded-full">Proposta Mais Baixa</span>' : ''}
+                `;
+                container.classList.add(borderColor);
+            }
+            
+            const values = [proposalData.totals.ktl, proposalData.totals.garcia, proposalData.totals.ankarsa];
+            const minVal = Math.min(...values);
+
+            createKPI('kpi-ktl', 'KTL', proposalData.totals.ktl, proposalData.totals.ktl === minVal);
+            createKPI('kpi-garcia', 'Garcia e Garcia', proposalData.totals.garcia, proposalData.totals.garcia === minVal);
+            createKPI('kpi-ankarsa', 'Ankarsa', proposalData.totals.ankarsa, proposalData.totals.ankarsa === minVal);
+            
+            const avgContainer = document.getElementById('kpi-avg');
+            avgContainer.innerHTML = `
+                <h3 class="text-lg font-semibold text-gray-700">Média de Mercado</h3>
+                <p class="text-3xl font-bold text-gray-800 mt-2">${formatCurrency(proposalData.totals.market_avg)}</p>
+            `;
+
+            const totalCostsCtx = document.getElementById('totalCostsChart').getContext('2d');
+            new Chart(totalCostsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['KTL', 'Garcia e Garcia', 'Ankarsa'],
+                    datasets: [{
+                        label: 'Custo Total da Proposta',
+                        data: [proposalData.totals.ktl, proposalData.totals.garcia, proposalData.totals.ankarsa],
+                        backgroundColor: ['#A5C8A5', '#E5CFC4', '#F4A261'],
+                        borderColor: ['#8EAF8E', '#D1B6A8', '#D88A4E'],
+                        borderWidth: 1
+                    }, {
+                        label: 'Média de Mercado',
+                        data: [proposalData.totals.market_avg, proposalData.totals.market_avg, proposalData.totals.market_avg],
+                        type: 'line',
+                        borderColor: '#708090',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: { x: { beginAtZero: true, ticks: { callback: value => formatCurrency(value) } } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatCurrency(context.raw)}` } } }
+                }
+            });
+
+            const chapterSelect = document.getElementById('chapterSelect');
+            proposalData.chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter.name;
+                option.textContent = chapter.name;
+                chapterSelect.appendChild(option);
+            });
+
+            const chapterCostsCtx = document.getElementById('chapterCostsChart').getContext('2d');
+            let chapterChart;
+            
+            function populateChapterTable(chapterData) {
+                const tableBody = document.getElementById('chapterValuesTable');
+                tableBody.innerHTML = ''; 
+
+                const formatDifference = (value, avg) => {
+                    const diff = value - avg;
+                    if(avg === 0) return '<span>--</span>';
+                    const percentage = (diff / avg) * 100;
+                    const sign = diff > 0 ? '+' : '';
+                    const color = diff > 0 ? 'text-red-600' : 'text-green-600';
+                    if (value === avg) return `<span class="text-gray-500">Na média</span>`;
+                    return `<span class="${color}">${sign}${formatCurrency(diff)} (${sign}${percentage.toFixed(2)}%)</span>`;
+                };
+                
+                const companies = [
+                    { name: 'KTL', value: chapterData.ktl },
+                    { name: 'Garcia e Garcia', value: chapterData.garcia },
+                    { name: 'Ankarsa', value: chapterData.ankarsa }
+                ];
+
+                companies.sort((a, b) => a.value - b.value).forEach(company => {
+                    const row = `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${company.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">${formatCurrency(company.value)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">${formatDifference(company.value, chapterData.avg)}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+                const avgRow = `
+                    <tr class="bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">Média de Mercado</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold">${formatCurrency(chapterData.avg)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">--</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += avgRow;
+            }
+
+            function updateChapterChart(chapterName) {
+                const chapterData = proposalData.chapters.find(c => c.name === chapterName);
+                document.getElementById('chapterChartTitle').textContent = `Comparativo: ${chapterName}`;
+                
+                const data = {
+                    labels: ['KTL', 'Garcia e Garcia', 'Ankarsa'],
+                    datasets: [{
+                        label: 'Custo por Capítulo',
+                        data: [chapterData.ktl, chapterData.garcia, chapterData.ankarsa],
+                        backgroundColor: ['#A5C8A5', '#E5CFC4', '#F4A261'],
+                        borderColor: ['#8EAF8E', '#D1B6A8', '#D88A4E'],
+                        borderWidth: 1
+                    }, {
+                        label: 'Média de Mercado',
+                        data: [chapterData.avg, chapterData.avg, chapterData.avg],
+                        type: 'line',
+                        borderColor: '#708090',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                };
+
+                if (chapterChart) {
+                    chapterChart.data = data;
+                    chapterChart.update();
+                } else {
+                    chapterChart = new Chart(chapterCostsCtx, {
+                        type: 'bar',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { callback: value => formatCurrency(value) } } },
+                            plugins: { legend: { display: true }, tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatCurrency(context.raw)}` } } }
+                        }
+                    });
+                }
+                populateChapterTable(chapterData);
+            }
+
+            chapterSelect.addEventListener('change', (e) => updateChapterChart(e.target.value));
+            updateChapterChart(proposalData.chapters[0].name);
+
+            const articlesTableBody = document.getElementById('articlesTableBody');
+            const articleSearch = document.getElementById('articleSearch');
+
+            function renderTable(filter = '') {
+                articlesTableBody.innerHTML = '';
+                const filteredArticles = proposalData.articles.filter(article => 
+                    article.name.toLowerCase().includes(filter.toLowerCase()) || article.id.toLowerCase().includes(filter.toLowerCase())
+                );
+
+                if(filteredArticles.length === 0) {
+                    articlesTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">Nenhum artigo encontrado.</td></tr>`;
+                    return;
+                }
+
+                filteredArticles.forEach(article => {
+                    const row = document.createElement('tr');
+                    const prices = [article.ktl, article.garcia, article.ankarsa];
+                    const minPrice = Math.min(...prices.filter(p => p > 0)); 
+                    
+                    const highlightClass = (price) => {
+                       if (price === minPrice) return 'text-green-700 font-semibold bg-green-50';
+                       return '';
+                    };
+
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${article.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${article.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.ktl)}">${formatCurrency(article.ktl)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.garcia)}">${formatCurrency(article.garcia)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${highlightClass(article.ankarsa)}">${formatCurrency(article.ankarsa)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${formatCurrency(article.avg)}</td>
+                    `;
+                    articlesTableBody.appendChild(row);
+                });
+            }
+
+            articleSearch.addEventListener('keyup', (e) => renderTable(e.target.value));
+            renderTable();
+            
+            const navButtons = document.querySelectorAll('.nav-button');
+            const sections = document.querySelectorAll('main > section');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    sections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
